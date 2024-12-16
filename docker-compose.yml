@@ -1,0 +1,247 @@
+version: '3.8'
+
+services:
+
+  api_gateway:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+      args:
+        FRONTEND_DIR: frontend
+    container_name: api_gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-service
+      - inventory-service
+      - order-service
+      - shipment-service
+    networks:
+      - app_network
+
+  auth-service:
+    build:
+      context: ./auth_service/auth_service
+    container_name: auth-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      auth_db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  inventory-service:
+    build:
+      context: ./inventory_service/inventory_service
+    container_name: inventory-service
+    ports:
+      - "8001:8000"
+    depends_on:
+      inventory_db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app_network
+
+
+  order-service:
+    build:
+      context: ./order_service/order_service
+    container_name: order-service
+    ports:
+      - "8002:8000"
+    depends_on:
+      order_processing_db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+    networks:
+      - app_network
+
+  shipment-service:
+    build:
+      context: ./shipment_service/shipment_service
+    container_name: shipment-service
+    ports:
+      - "8003:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app_network
+
+
+  # --------------------------------------------------------------------------------
+  # CELERY
+
+
+  order_celery_worker:
+    build:
+      context: ./order_service/order_service
+    container_name: order_celery_worker
+    command: celery -A order_service worker --loglevel=info --concurrency=4 -n order_worker.%h
+    depends_on:
+      order-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      order_processing_db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+
+  celery_worker:
+    build:
+      context: ./inventory_service/inventory_service
+    container_name: celery_worker
+    command: celery -A inventory_service worker --loglevel=info --concurrency=4 -n inventory_worker.%h
+    depends_on:
+      inventory-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      inventory_db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  shipment_celery_worker:
+    build:
+      context: ./shipment_service/shipment_service
+    container_name: shipment_celery_worker
+    command: celery -A shipment_service worker --loglevel=info --concurrency=5 -n shipment_worker.%h
+    depends_on:
+      shipment-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+    networks:
+      - app_network
+
+
+  celery_beat:
+    build:
+      context: ./inventory_service/inventory_service
+    container_name: celery_beat
+    command: celery -A inventory_service beat --loglevel=info
+    depends_on:
+      inventory-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      inventory_db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  order_shipment_consumer:
+    build:
+      context: ./order_service/order_service
+    container_name: order_shipment_consumer
+    command: celery -A order_service worker --loglevel=info --concurrency=1 -n shipment_consumer.%h -Q shipment_status_updates
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+    networks:
+      - app_network
+
+
+  # --------------------------------------------------------------------------------
+  # DATABASES
+
+  auth_db:
+    image: postgres
+    container_name: auth_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  inventory_db:
+    image: postgres
+    container_name: inventory_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: inventory_db
+    ports:
+      - "5433:5432"
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  order_processing_db:
+    image: postgres
+    container_name: order_processing_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: order_processing_db
+    ports:
+      - "5434:5432"
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - app_network
+    environment:
+      MONGO_INITDB_DATABASE: shipment_db
+
+
+
+  # --------------------------------------------------------------------------------
+  # RABBIT
+
+  rabbitmq:
+    image: rabbitmq:3.8-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"       # AMQP port
+      - "15672:15672"     # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app_network:

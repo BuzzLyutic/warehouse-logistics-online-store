@@ -1,0 +1,13 @@
+celery==5.4.0
+Django==4.2.16
+django-mongoengine==0.5.6
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+django-celery-results==2.5.1
+mongoengine==0.29.1
+pymongo==4.6.3
+sqlparse==0.5.2
+python-dotenv
+requests==2.32.3
+gunicorn==23.0.0
+pika

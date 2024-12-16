@@ -1,0 +1,28 @@
+/* src/styles/InventoryForm.css */
+.inventory-form {
+  width: 400px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.inventory-form h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.inventory-form form {
+  display: flex;
+  flex-direction: column;
+}
+
+.inventory-form label {
+  margin-bottom: 5px;
+}
+
+.inventory-form .submit-button {
+  margin-top: 20px;
+}
