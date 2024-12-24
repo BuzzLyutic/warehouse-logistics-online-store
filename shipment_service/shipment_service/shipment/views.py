@@ -7,6 +7,13 @@ from .permissions import IsServiceAccount
 from .serializers import ShipmentSerializer, ShipmentLogSerializer
 from .tasks import notify_order_processing_service, simulate_shipment_updates
 import datetime
+from rest_framework import generics
+
+
+class ShipmentListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Shipment.objects.all()
+    serializer_class = ShipmentSerializer
 
 
 class ShipmentCreateView(APIView):

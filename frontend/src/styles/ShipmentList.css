@@ -1,0 +1,35 @@
+/* src/styles/ShipmentList.css */
+.shipment-list-container {
+    padding: 20px;
+}
+
+.shipment-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.shipment-table th, .shipment-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.shipment-table th {
+    background-color: #f0f0f0;
+}
+
+.shipment-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.log-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.log-list li {
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}

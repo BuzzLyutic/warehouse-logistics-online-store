@@ -16,6 +16,10 @@ import InventoryList from './components/Inventory/InventoryList';
 import InventoryCreate from './components/Inventory/InventoryCreate';
 import InventoryUpdate from './components/Inventory/InventoryUpdate';
 import Home from './components/Home';
+import OrderList from './components/Orders/OrderList';
+import OrderDetails from './components/Orders/OrderDetails';
+import ShipmentList from './components/Shipments/ShipmentList';
+
 import './styles/App.css';
 
 const AppLayout = () => {
@@ -50,7 +54,12 @@ const router = createBrowserRouter(
           <Route path="create" element={<InventoryCreate />} />
           <Route path="update" element={<InventoryUpdate />} />
         </Route>
+      <Route path="/orders" element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+      <Route index element={<OrderList />} />
+      <Route path=":id" element={<OrderDetails />} />
     </Route>
+    <Route path="/shipment" element={<ProtectedRoute><ShipmentList /></ProtectedRoute>} />
+  </Route>
   )
 );
 

@@ -22,6 +22,8 @@ export const registerUser = (userData) => api.post('/auth/register/', userData);
 export const loginUser = (userData) => api.post('/auth/login/', userData);
 export const logoutUser = () => api.post('/auth/logout/', { refresh: localStorage.getItem('refreshToken') });
 export const getCurrentUser = () => api.get('/auth/user/me/');
+export const getAllShipments = () => api.get('/shipment/all_shipments/');
+
 
 api.interceptors.response.use(
   (response) => response,
